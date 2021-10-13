@@ -5,59 +5,29 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import output
 import codecs
+import categoria_helper
 
-st = nltk.stem.RSLPStemmer()
-stopwords = set(nltk.corpus.stopwords.words('portuguese'))
-
-educacao_palavras = [st.stem('escola'), st.stem('laboratório'), st.stem('educação'), st.stem('informática')]
-seguranca_palavras = [st.stem('policial'),st.stem('assalto'), st.stem('roubo')]
-saude_palavras = [st.stem('vacinação')]
-infra_palavras = [st.stem('prolongamento'), st.stem('via'), st.stem('praça')]
-economia_palavras = [st.stem('orçamento'), st.stem('financeiro'), st.stem('fundos'), st.stem('créditos'), st.stem('pagamentos'), st.stem('auxílio')]
+# Parametros Execução #
+page_number = 0
+total_pages = 1#int(input("Quantas páginas buscar? "))
+processar_categorias = False;
+utilizar_paginas_salvas = False;
+autor = 'Poder Executivo'
+default_page_url = "https://digital.camarablu.sc.gov.br/documentos/tipo:projetos-2/subtipo:103%2C105%2C106%2C102%2C104/numero:/numero_final:/ano:/ordem:Documento.data%20DESC/autor:/assunto:/processo:/documento_data_inicial:/documento_data_final:/publicacoes-legais:/situacao:/termo:/operadorTermo2:AND/termo2:/protocolo:"
+default_page_path = "D:\TCC2\Paginas\principal.html"
 
 caminho_padrao_armazenamento_pagina = 'D:/TCC2/Paginas';
-
 url_base = "https://digital.camarablu.sc.gov.br"
+# Parametros Execução #
 
-def remove_stopwords(expressao):
-    palavras = [i for i in expressao.split() if not i in stopwords]
-    return (" ".join(palavras))
 
-#titulo_projeto: string
-#nome_autor: string[]
-def processa_categoria(titulo_projeto, nome_autor):
-    categorias_projetos = []
-    titulo_projeto = remove_stopwords(titulo_projeto.lower())
+categoria_helper.configurar(processar_categorias)
 
-    # for verificando palavras educacao
-    for palavra_educacao in educacao_palavras:
-        if titulo_projeto.count(palavra_educacao) > 0:
-            categorias_projetos.append('Educação')
-
-    # for verificando palavras segurança
-    for palavra_seguranca in seguranca_palavras:
-        if titulo_projeto.count(palavra_seguranca) > 0:
-            categorias_projetos.append('Segurança')
-
-    # for verificando palavras saúde
-    for palavra_saude in saude_palavras:
-        if titulo_projeto.count(palavra_saude) > 0:
-            categorias_projetos.append('Saúde')
-
-    # for verificando palavras infraestrutura
-    for palavra_infra in infra_palavras:
-        if titulo_projeto.count(palavra_infra) > 0:
-            categorias_projetos.append('Infra')
-
-    # for verificando palavras economia
-    for palavra_economia in economia_palavras:
-        if titulo_projeto.count(palavra_economia) > 0:
-            categorias_projetos.append('Economia')
-
-    #Para realizar o distinct
-    categorias_projetos = list(set(categorias_projetos))
-
-    return categorias_projetos
+educacao_palavras = categoria_helper.gerar_palavras_educacao();
+seguranca_palavras = categoria_helper.gerar_palavras_seguranca();
+saude_palavras = categoria_helper.gerar_palavras_saude();
+infra_palavras = categoria_helper.gerar_palavras_infra();
+economia_palavras = categoria_helper.gerar_palavras_economia();
 
 def get_next_page_url(soup):
     li_next_pag = soup.find_all('li', class_='next-pag')
@@ -66,28 +36,33 @@ def get_next_page_url(soup):
     page = requests.get(url_base + href_next_page)
     soup = BeautifulSoup(page.content, 'html.parser')
     get_next_page_url(soup)
-
     #return url_base + href_next_page
     #return 0
+
+def get_soup_pagina(project_href):
+    primeiro_index = project_href.find('/', 1)
+    nome_arquivo = project_href[primeiro_index + 1: len(project_href)]
+    nome_arquivo_completo = caminho_padrao_armazenamento_pagina + '/' + nome_arquivo + '.html'
+
+    if (utilizar_paginas_salvas):
+        #Quando por arquivo .html
+        f = codecs.open(nome_arquivo_completo, "r", "utf-8")
+        content = f.read()
+        soup = BeautifulSoup(content, 'html.parser')
+        return soup;
+    else:
+        page = requests.get(url_base + project_href)
+        soup = BeautifulSoup(page.content, 'html.parser')
+        output.salvar_html_pagina(nome_arquivo_completo, soup);
+        return soup;
+
 
 def get_quantidade_projetos_categoria(df_autor, categoria):
     mask_filter_categoria = df_autor.Categorias.apply(lambda x: categoria in x)
     return len(df_autor[mask_filter_categoria].index)
 
 def get_autor_names(project_href):
-    primeiro_index = project_href.find('/', 1)
-    nome_arquivo = project_href[primeiro_index + 1: len(project_href)]
-    nome_arquivo_completo = caminho_padrao_armazenamento_pagina + '/' + nome_arquivo + '.html'
-
-    # Quando por arquivo .html
-    # f = codecs.open(nome_arquivo_completo, "r", "utf-8")
-    # content = f.read()
-    # soup = BeautifulSoup(content, 'html.parser')
-
-    page = requests.get(url_base + project_href)
-    soup = BeautifulSoup(page.content, 'html.parser')
-
-    output.salvar_html_pagina(nome_arquivo_completo, soup);
+    soup = get_soup_pagina(project_href)
 
     item_autor = list(soup.find_all('li', class_='documento-item'))[1]
     nome_autors = item_autor.findChildren('div', class_='col-xs-8 col-sm-10');
@@ -101,6 +76,8 @@ def scrap_projects_page(page_url):
     if page_url == 0:
         return
 
+    # Quando página principal, vai mudar um pouco como capturar o nome do arquivo
+
     #Quando por arquivo .html
     # page_url = "D:\TCC2\Paginas\principal.html";
     # f = codecs.open(page_url, "r", "utf-8")
@@ -110,7 +87,6 @@ def scrap_projects_page(page_url):
     #Quando via requisição
     page = requests.get(page_url)
     soup = BeautifulSoup(page.content, 'html.parser')
-
     output.salvar_html_pagina(caminho_padrao_armazenamento_pagina + '/principal.html', soup);
 
     projetos = soup.find_all('a', class_='list-link') # clearfixcol-xs-12 col-sm-7
@@ -125,11 +101,10 @@ def scrap_projects_page(page_url):
 
         title = title_element.text.rstrip().lstrip()
         autor = ''.join(get_autor_names(href_projeto))
-        # autor = 'teste';
 
         lista_projetos.append(title)
         lista_autores.append(autor)
-        lista_categorias.append(processa_categoria(title, autor))
+        lista_categorias.append(categoria_helper.processa_categoria(title, educacao_palavras, seguranca_palavras, saude_palavras, infra_palavras, economia_palavras))
 
         print('.', end = '')
 
@@ -143,11 +118,6 @@ def scrap_projects_page(page_url):
 
 
 ##################################### Captura quantidade páginas definidas pelo usuário #####################################
-page_number = 0
-total_pages = 1#int(input("Quantas páginas buscar? "))
-autor = 'Poder Executivo'
-default_page_url = "https://digital.camarablu.sc.gov.br/documentos/tipo:projetos-2/subtipo:103%2C105%2C106%2C102%2C104/numero:/numero_final:/ano:/ordem:Documento.data%20DESC/autor:/assunto:/processo:/documento_data_inicial:/documento_data_final:/publicacoes-legais:/situacao:/termo:/operadorTermo2:AND/termo2:/protocolo:"
-#default_page_url = "D:\TCC2\Paginas\principal.html"
 
 def dataframe_gerador(data):
     return pd.DataFrame(data, columns = ['Projetos', 'Autores', 'Categorias'])
@@ -158,7 +128,6 @@ while page_number < total_pages:
     if page_number > 1:
         default_page_url += "/page:" + str(page_number)
 
-    #df = df.append(pd.DataFrame(scrap_projects_page(default_page_url), columns = ['Projetos', 'Autores', 'Categorias']))
     df = df.append(dataframe_gerador(scrap_projects_page(default_page_url)))
 
     output.printar_console(df);

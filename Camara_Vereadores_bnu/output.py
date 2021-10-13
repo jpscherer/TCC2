@@ -1,3 +1,5 @@
+import os;
+
 def printar_console(data_frame):
     # autor = 'Poder Executivo'
     # print('Totais: ' + autor)
@@ -12,11 +14,31 @@ def exportar_csv(data_frame):
 def apresentar_grafico_radar(data_frame):
     print('apresentar_grafico_radar')
 
-def salvar_html_pagina(nome_com_caminho_arquivo, soup):
+def salvar_html_pagina(caminho_arquivo, soup):
     salvar_em_arquivos = False;
     if (salvar_em_arquivos):
-        with open(nome_com_caminho_arquivo, "x", encoding= 'utf-8') as file:
+        os.remove(caminho_arquivo);
+        with open(caminho_arquivo, "x", encoding= 'utf-8') as file:
             file.write(str(soup.prettify()))
+
+#salvar arquivo
+def salvar_palavras_categoria_arquivo(palavras, caminho_arquivo):
+    conteudo_arquivo = '';
+    for palavra in palavras:
+        conteudo_arquivo += palavra + ';'
+
+    os.remove(caminho_arquivo);
+    with open(caminho_arquivo, "x", encoding='utf-8') as file:
+        file.write(conteudo_arquivo);
+
+    return 0;
+
+def carregar_palvaras_categoria_arquivo(caminho_arquivo):
+    conteudo_arquivo = '';
+    with open(caminho_arquivo, "r", encoding='utf-8') as file:
+        conteudo_arquivo += file.readlines();
+
+    return conteudo_arquivo.sprint(';');
 
 ################################################################################################
 
