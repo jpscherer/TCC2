@@ -33,7 +33,7 @@ def gerar_palavras_educacao():
         educacao_palavras.append(palavra_direta)
         for synsets in wordnet.synsets(palavra_direta, lang='por'):
             for i in synsets.lemma_names(lang='por'):
-                educacao_palavras.append(i)
+                educacao_palavras.append(st.stem(i))
 
     palavras_unificadas = unique(educacao_palavras);
     output.salvar_palavras_categoria_arquivo(palavras_unificadas, caminho_arquivo_palavras)
@@ -52,7 +52,7 @@ def gerar_palavras_seguranca():
         seguranca_palavras.append(palavra_direta)
         for synsets in wordnet.synsets(palavra_direta, lang='por'):
             for i in synsets.lemma_names(lang='por'):
-                seguranca_palavras.append(i)
+                seguranca_palavras.append(st.stem(i))
 
     palavras_unificadas = unique(seguranca_palavras);
     output.salvar_palavras_categoria_arquivo(palavras_unificadas, caminho_arquivo_palavras)
@@ -71,7 +71,7 @@ def gerar_palavras_saude():
         saude_palavras.append(palavra_direta)
         for synsets in wordnet.synsets(palavra_direta, lang='por'):
             for i in synsets.lemma_names(lang='por'):
-                saude_palavras.append(i)
+                saude_palavras.append(st.stem(i))
 
     palavras_unificadas = unique(saude_palavras);
     output.salvar_palavras_categoria_arquivo(palavras_unificadas, caminho_arquivo_palavras)
@@ -90,7 +90,7 @@ def gerar_palavras_infra():
         infra_palavras.append(palavra_direta)
         for synsets in wordnet.synsets(palavra_direta, lang='por'):
             for i in synsets.lemma_names(lang='por'):
-                infra_palavras.append(i)
+                infra_palavras.append(st.stem(i))
 
     palavras_unificadas = unique(infra_palavras);
     output.salvar_palavras_categoria_arquivo(palavras_unificadas, caminho_arquivo_palavras)
@@ -109,7 +109,7 @@ def gerar_palavras_economia():
         economia_palavras.append(palavra_direta)
         for synsets in wordnet.synsets(palavra_direta, lang='por'):
             for i in synsets.lemma_names(lang='por'):
-                economia_palavras.append(i)
+                economia_palavras.append(st.stem(i))
 
     palavras_unificadas = unique(economia_palavras);
     output.salvar_palavras_categoria_arquivo(palavras_unificadas, caminho_arquivo_palavras)
@@ -146,5 +146,7 @@ def processa_categoria(titulo_projeto, educacao_palavras, seguranca_palavras, sa
 
     #Para realizar o distinct
     categorias_projetos = list(set(categorias_projetos))
+    if (len(categorias_projetos) == 0):
+        categorias_projetos.append('Outros')
 
     return categorias_projetos

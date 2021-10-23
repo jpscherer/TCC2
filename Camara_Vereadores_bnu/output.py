@@ -1,4 +1,7 @@
 import os;
+import pandas as pd
+import matplotlib.pyplot as plt
+from math import pi
 
 def printar_console(data_frame):
     # autor = 'Poder Executivo'
@@ -9,7 +12,7 @@ def printar_console(data_frame):
 
 
 def exportar_csv(data_frame):
-    data_frame.to_csv('D:\TCC2\exportacao\projetos_camara_vereadores.csv')
+    data_frame.to_csv('D:\TCC2\exportacao\projetos_camara_vereadores.csv', sep=';')
 
 def apresentar_grafico_radar(data_frame):
     print('apresentar_grafico_radar')
@@ -119,14 +122,70 @@ def radar_factory(num_vars, frame='circle'):
     register_projection(RadarAxes)
     return theta
 
-def gerar_grafico_estrela(autor, qtd_educacao, qtd_seguranca, qtd_saude, qtd_infra, qtd_economia):
-    N = 5
+def gerar_grafico_estrela2(autor, qtd_educacao, qtd_seguranca, qtd_saude, qtd_infra, qtd_economia, qtd_outros):
+    # Set data
+    df = pd.DataFrame({
+        'group': [autor, 'Bruno Cunha', 'C', 'D'],
+        'Educação': [qtd_educacao, 1.5, 30, 4],
+        'Segurança': [qtd_seguranca, 10, 9, 34],
+        'Saúde': [qtd_saude, 39, 23, 24],
+        'Infra': [qtd_infra, 31, 33, 14],
+        'Economia': [qtd_economia, 15, 32, 14],
+        'Outros': [qtd_outros, 0,0,0]
+    })
+
+    # number of variable
+    categories = list(df)[1:]
+    N = len(categories)
+
+    # We are going to plot the first line of the data frame.
+    # But we need to repeat the first value to close the circular graph:
+    values = df.loc[0].drop(
+        'group').values.flatten().tolist()  # Seleciona qual item do dataframe será apresentado (a,b,c ou d)
+    values += values[:1]
+
+    # values2 = df.loc[1].drop(
+    #     'group').values.flatten().tolist()  # Seleciona qual item do dataframe será apresentado (a,b,c ou d)
+    # values2 += values[:1]
+
+    # What will be the angle of each axis in the plot? (we divide the plot / number of variable)
+    angles = [n / float(N) * 2 * pi for n in range(N)]
+    angles += angles[:1]
+
+    # Initialise the spider plot
+    ax = plt.subplot(111, polar=True)
+
+    # Draw one axe per variable + add labels
+    plt.xticks(angles[:-1], categories, color='grey', size=8)  # Nome cada item
+
+    # Draw ylabels
+    ax.set_rlabel_position(0)
+    plt.yticks([5, 10, 20], ["5", "10", "15"], color="grey", size=7)  # Escala interna
+    plt.ylim(0, 40)
+
+    # Plot data
+    ax.plot(angles, values, linewidth=1, linestyle='solid')  # Linha
+    # Fill area
+    ax.fill(angles, values, 'b', alpha=0.1)  # Preenchimento
+
+    # # Plot data
+    # ax.plot(angles, values2, linewidth=1, linestyle='solid')  # Linha
+    # # Fill area
+    # ax.fill(angles, values2, 'r', alpha=0.1)  # Preenchimento
+
+    ax.set_title(autor, y=1.08)
+
+    # Show the graph
+    plt.show();
+
+def gerar_grafico_estrela(autor, qtd_educacao, qtd_seguranca, qtd_saude, qtd_infra, qtd_economia, qtd_outros):
+    N = 6
     theta = radar_factory(N, frame='polygon')
 
     data = [
-        ['Educação', 'Segurança', 'Saúde', 'Infra', 'Economia'],
+        ['Educação', 'Segurança', 'Saúde', 'Infra', 'Economia', 'Outros'],
         (autor, [
-            [qtd_educacao, qtd_seguranca, qtd_saude, qtd_infra, qtd_economia]])
+            [qtd_educacao, qtd_seguranca, qtd_saude, qtd_infra, qtd_economia, qtd_outros]])
 
     ]
     spoke_labels = data.pop(0)
@@ -138,7 +197,7 @@ def gerar_grafico_estrela(autor, qtd_educacao, qtd_seguranca, qtd_saude, qtd_inf
     colors = ['b']
     # Plot the four cases from the example data on separate axes
     for ax, (title, case_data) in zip(axs.flat, data):
-        ax.set_rgrids([0, 2, 4, 6, 10])
+        ax.set_rgrids([0, 2, 4, 6, 10, 14])
         ax.set_title(title, weight='bold', size='medium', position=(0.5, 1.1),
                      horizontalalignment='center', verticalalignment='center')
         for d, color in zip(case_data, colors):
