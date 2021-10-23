@@ -25,23 +25,14 @@ filtro_atendido = False;
 
 with open(caminho_params, "r", encoding='utf-8') as file:
     conteudo_arquivo = file.readlines();
-    print(conteudo_arquivo[0].rstrip().lstrip())
-    print(conteudo_arquivo[1].rstrip().lstrip())
-    print(conteudo_arquivo[2].rstrip().lstrip())
-    print(conteudo_arquivo[3].rstrip().lstrip())
-    print(conteudo_arquivo[4].rstrip().lstrip())
-    print(conteudo_arquivo[5].rstrip().lstrip())
-    print(conteudo_arquivo[6].rstrip().lstrip())
-    print(conteudo_arquivo[7].rstrip().lstrip())
-
-    # filtro_data = datetime.strptime(conteudo_arquivo[0], '%d/%m/%Y')
-    # processar_categorias = conteudo_arquivo[1] in ['True']; #bool
-    # utilizar_paginas_salvas = conteudo_arquivo[2] in ['True']; #bool
-    # autor = conteudo_arquivo[3]
-    # default_page_url = conteudo_arquivo[4]
-    # default_page_path = conteudo_arquivo[5]
-    # caminho_padrao_armazenamento_pagina = conteudo_arquivo[6];
-    # url_base = conteudo_arquivo[7]
+    filtro_data = datetime.strptime(conteudo_arquivo[0].rstrip().lstrip(), '%d/%m/%Y')
+    processar_categorias = conteudo_arquivo[1].rstrip().lstrip() in ['True']; #bool
+    utilizar_paginas_salvas = conteudo_arquivo[2].rstrip().lstrip() in ['True']; #bool
+    autor = conteudo_arquivo[3].rstrip().lstrip()
+    default_page_url = conteudo_arquivo[4].rstrip().lstrip()
+    default_page_path = conteudo_arquivo[5].rstrip().lstrip()
+    caminho_padrao_armazenamento_pagina = conteudo_arquivo[6].rstrip().lstrip();
+    url_base = conteudo_arquivo[7].rstrip().lstrip()
 
 print(filtro_data)
 print(processar_categorias)
