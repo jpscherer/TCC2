@@ -17,6 +17,7 @@ filtro_data = datetime.strptime('01/10/2021', '%d/%m/%Y')
 processar_categorias = False;
 utilizar_paginas_salvas = False;
 autor = ''
+autor2 = ''
 default_page_url = ''
 default_page_path = ''
 caminho_padrao_armazenamento_pagina = '';
@@ -29,24 +30,27 @@ with open(caminho_params, "r", encoding='utf-8') as file:
     processar_categorias = conteudo_arquivo[1].rstrip().lstrip() in ['True']; #bool
     utilizar_paginas_salvas = conteudo_arquivo[2].rstrip().lstrip() in ['True']; #bool
     autor = conteudo_arquivo[3].rstrip().lstrip()
-    default_page_url = conteudo_arquivo[4].rstrip().lstrip()
-    default_page_path = conteudo_arquivo[5].rstrip().lstrip()
-    caminho_padrao_armazenamento_pagina = conteudo_arquivo[6].rstrip().lstrip();
-    url_base = conteudo_arquivo[7].rstrip().lstrip()
+    autor2 = conteudo_arquivo[4].rstrip().lstrip()
+    default_page_url = conteudo_arquivo[5].rstrip().lstrip()
+    default_page_path = conteudo_arquivo[6].rstrip().lstrip()
+    caminho_padrao_armazenamento_pagina = conteudo_arquivo[7].rstrip().lstrip();
+    url_base = conteudo_arquivo[8].rstrip().lstrip()
 
-print(filtro_data)
-print(processar_categorias)
-print(utilizar_paginas_salvas)
-print(autor)
-print(default_page_url)
-print(default_page_path)
-print(caminho_padrao_armazenamento_pagina)
-print(url_base)
+print('Filtro data: ', filtro_data)
+print('Processar categorias: ', processar_categorias)
+print('Utilizar páginas salvas: ', utilizar_paginas_salvas)
+print('Autor1: ', autor)
+print('Autor2: ',  autor2)
+print('Default page url: ', default_page_url)
+print('Default page path: ', default_page_path)
+print('Camino padrão armazenamento pagina: ', caminho_padrao_armazenamento_pagina)
+print('Url base: ', url_base)
 
 # filtro_data = datetime.strptime('01/10/2021', '%d/%m/%Y')
 # processar_categorias = False;
 # utilizar_paginas_salvas = False;
 # autor = 'Bruno Cunha'
+# autor2 = 'Poder Executivo'
 # default_page_url = "https://digital.camarablu.sc.gov.br/documentos/tipo:projetos-2/subtipo:103%2C105%2C106%2C102%2C104/numero:/numero_final:/ano:/ordem:Documento.data%20DESC/autor:/assunto:/processo:/documento_data_inicial:/documento_data_final:/publicacoes-legais:/situacao:/termo:/operadorTermo2:AND/termo2:/protocolo:"
 # default_page_path = "D:\TCC2\Paginas\principal.html"
 # caminho_padrao_armazenamento_pagina = 'D:/TCC2/Paginas';
@@ -86,7 +90,7 @@ def get_soup_pagina(project_href):
         soup = BeautifulSoup(content, 'html.parser')
         return soup;
     else:
-        page = requests.get(url_base + project_href)
+        page = requests.get(url_base + project_href, timeout=30, )
         soup = BeautifulSoup(page.content, 'html.parser')
         output.salvar_html_pagina(nome_arquivo_completo, soup);
         return soup;
@@ -114,10 +118,10 @@ def get_project_info(project_href):
     formated_autor_names = []
     [formated_autor_names.append(item.text.rstrip().lstrip().replace('\n', '-')) for item in nome_autors]
 
-    item_situacao = itens_projeto[5]
-    situacao_conteudo = item_situacao.findChildren('div', class_='col-xs-8 col-sm-10')[0].text.rstrip().lstrip();
-    data_situacao = situacao_conteudo[(len(situacao_conteudo)-10):len(situacao_conteudo)]
-    print(data_situacao)
+    # item_situacao = itens_projeto[5]
+    # situacao_conteudo = item_situacao.findChildren('div', class_='col-xs-8 col-sm-10')[0].text.rstrip().lstrip();
+    # data_situacao = situacao_conteudo[(len(situacao_conteudo)-10):len(situacao_conteudo)]
+    # print(data_situacao)
 
     return formated_autor_names[0], data_projeto;
 
@@ -135,8 +139,9 @@ def scrap_projects_page(page_url):
     # soup = BeautifulSoup(content, 'html.parser')
 
     #Quando via requisição
-    page = requests.get(page_url)
+    page = requests.get(page_url, timeout=30)
     soup = BeautifulSoup(page.content, 'html.parser')
+
     output.salvar_html_pagina(caminho_padrao_armazenamento_pagina + '/principal.html', soup);
 
     projetos = soup.find_all('a', class_='list-link') # clearfixcol-xs-12 col-sm-7
@@ -154,7 +159,6 @@ def scrap_projects_page(page_url):
         (autores_projeto, data_projeto) = get_project_info(href_projeto);
 
         if (filtro_atendido == True):
-            print('break scrap projetos')
             break
 
         autor = ''.join(autores_projeto)
@@ -172,12 +176,17 @@ def scrap_projects_page(page_url):
               'Categorias': lista_categorias
             }
 
-    print('return scrap projetos')
     return pd.DataFrame(data, columns = ['Projetos', 'Autores', 'Data', 'Categorias']);
 ##################################### Captura títulos dos projetos #####################################
 
 
 ##################################### Captura quantidade páginas definidas pelo usuário #####################################
+
+def get_percentual_categoria(qtd_categoria, qtd_total):
+    if (qtd_categoria <= 0 or qtd_total <= 0):
+        return 0;
+
+    return round(((qtd_categoria/qtd_total)*100),2)
 
 def dataframe_gerador(data):
     return pd.DataFrame(data, columns = ['Projetos', 'Autores', 'Data', 'Categorias'])
@@ -192,14 +201,12 @@ while page_number < total_pages:
         page_url += "/page:" + str(page_number)
 
     df = df.append(dataframe_gerador(scrap_projects_page(page_url)))
-    print('pós scrapt proejtos - principal')
     output.printar_console(df);
     output.exportar_csv(df);
 
     page_number += 1
 
     if (filtro_atendido == True):
-        print('break principal')
         break
 
 print('Autor: ' + autor)
@@ -215,13 +222,38 @@ qtd_outros = get_quantidade_projetos_categoria(df_autor, 'Outros')
 
 total_projetos_autor_periodo = qtd_educacao + qtd_seguranca + qtd_saude + qtd_infra + qtd_economia + qtd_outros
 
-print('Educação: ' + str(qtd_educacao) + ' - ' + str(round(((qtd_educacao/total_projetos_autor_periodo)*100),2)) + '% no período')
-print('Segurança: ' + str(qtd_seguranca) + ' - ' + str(round(((qtd_seguranca/total_projetos_autor_periodo)*100),2)) + '% no período')
-print('Saúde: ' + str(qtd_saude) + ' - ' + str(round(((qtd_saude/total_projetos_autor_periodo)*100),2)) + '% no período')
-print('Infra: ' + str(qtd_infra) + ' - ' + str(round(((qtd_infra/total_projetos_autor_periodo)*100),2)) + '% no período')
-print('Economia: ' + str(qtd_economia) + ' - ' + str(round(((qtd_economia/total_projetos_autor_periodo)*100),2)) + '% no período')
-print('Outros: ' + str(qtd_outros) + ' - ' + str(round(((qtd_outros/total_projetos_autor_periodo)*100),2)) + '% no período')
+print('Educação: ' + str(qtd_educacao) + ' - ' + str(get_percentual_categoria(qtd_educacao, total_projetos_autor_periodo)) + '% no período')
+print('Segurança: ' + str(qtd_seguranca) + ' - ' + str(get_percentual_categoria(qtd_seguranca, total_projetos_autor_periodo)) + '% no período')
+print('Saúde: ' + str(qtd_saude) + ' - ' + str(get_percentual_categoria(qtd_saude, total_projetos_autor_periodo)) + '% no período')
+print('Infra: ' + str(qtd_infra) + ' - ' + str(get_percentual_categoria(qtd_infra, total_projetos_autor_periodo)) + '% no período')
+print('Economia: ' + str(qtd_economia) + ' - ' + str(get_percentual_categoria(qtd_economia, total_projetos_autor_periodo)) + '% no período')
+print('Outros: ' + str(qtd_outros) + ' - ' + str(get_percentual_categoria(qtd_outros, total_projetos_autor_periodo)) + '% no período')
 
 output.gerar_grafico_estrela2(autor, qtd_educacao, qtd_seguranca, qtd_saude, qtd_infra, qtd_economia, qtd_outros)
+
+if (autor2 != ''):
+    print('')
+    print('-----------------------------------------')
+    print('Autor: ' + autor2)
+    df_autor2 = df.query('Autores == "' + autor2 + '"')
+    print(df_autor2)
+
+    qtd_educacao2 = get_quantidade_projetos_categoria(df_autor2, 'Educação')
+    qtd_seguranca2 = get_quantidade_projetos_categoria(df_autor2, 'Segurança')
+    qtd_saude2 = get_quantidade_projetos_categoria(df_autor2, 'Saúde')
+    qtd_infra2 = get_quantidade_projetos_categoria(df_autor2, 'Infra')
+    qtd_economia2 = get_quantidade_projetos_categoria(df_autor2, 'Economia')
+    qtd_outros2 = get_quantidade_projetos_categoria(df_autor2, 'Outros')
+
+    total_projetos_autor_periodo2 = qtd_educacao2 + qtd_seguranca2 + qtd_saude2 + qtd_infra2 + qtd_economia2 + qtd_outros2
+
+    print('Educação: ' + str(qtd_educacao2) + ' - ' + str(get_percentual_categoria(qtd_educacao2, total_projetos_autor_periodo2)) + '% no período')
+    print('Segurança: ' + str(qtd_seguranca2) + ' - ' + str(get_percentual_categoria(qtd_seguranca2, total_projetos_autor_periodo2)) + '% no período')
+    print('Saúde: ' + str(qtd_saude2) + ' - ' + str(get_percentual_categoria(qtd_saude2, total_projetos_autor_periodo2)) + '% no período')
+    print('Infra: ' + str(qtd_infra2) + ' - ' + str(get_percentual_categoria(qtd_infra2, total_projetos_autor_periodo2)) + '% no período')
+    print('Economia: ' + str(qtd_economia2) + ' - ' + str(get_percentual_categoria(qtd_economia2, total_projetos_autor_periodo2)) + '% no período')
+    print('Outros: ' + str(qtd_outros2) + ' - ' + str(get_percentual_categoria(qtd_outros2, total_projetos_autor_periodo2)) + '% no período')
+
+    output.gerar_grafico_estrela2(autor2, qtd_educacao2, qtd_seguranca2, qtd_saude2, qtd_infra2, qtd_economia2, qtd_outros2)
 
 ##################################### Captura quantidade páginas definidas pelo usuário #####################################

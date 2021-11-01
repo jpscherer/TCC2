@@ -160,7 +160,7 @@ def gerar_grafico_estrela2(autor, qtd_educacao, qtd_seguranca, qtd_saude, qtd_in
 
     # Draw ylabels
     ax.set_rlabel_position(0)
-    plt.yticks([5, 10, 20], ["5", "10", "15"], color="grey", size=7)  # Escala interna
+    plt.yticks([5, 10, 15], ["5", "10", "15"], color="grey", size=7)  # Escala interna
     plt.ylim(0, 40)
 
     # Plot data
