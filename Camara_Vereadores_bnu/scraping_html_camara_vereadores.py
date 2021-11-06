@@ -23,6 +23,7 @@ default_page_path = ''
 caminho_padrao_armazenamento_pagina = '';
 url_base = ''
 filtro_atendido = False;
+popular_dataframe = False;
 
 with open(caminho_params, "r", encoding='utf-8') as file:
     conteudo_arquivo = file.readlines();
@@ -35,6 +36,7 @@ with open(caminho_params, "r", encoding='utf-8') as file:
     default_page_path = conteudo_arquivo[6].rstrip().lstrip()
     caminho_padrao_armazenamento_pagina = conteudo_arquivo[7].rstrip().lstrip();
     url_base = conteudo_arquivo[8].rstrip().lstrip()
+    popular_dataframe = conteudo_arquivo[9].rstrip().lstrip() in ['True']; #bool
 
 print('Filtro data: ', filtro_data)
 print('Processar categorias: ', processar_categorias)
@@ -45,6 +47,7 @@ print('Default page url: ', default_page_url)
 print('Default page path: ', default_page_path)
 print('Camino padrão armazenamento pagina: ', caminho_padrao_armazenamento_pagina)
 print('Url base: ', url_base)
+print('Popular Dadaframe: ', popular_dataframe)
 
 # filtro_data = datetime.strptime('01/10/2021', '%d/%m/%Y')
 # processar_categorias = False;
@@ -90,7 +93,7 @@ def get_soup_pagina(project_href):
         soup = BeautifulSoup(content, 'html.parser')
         return soup;
     else:
-        page = requests.get(url_base + project_href, timeout=30, )
+        page = requests.get(url_base + project_href, timeout=120)
         soup = BeautifulSoup(page.content, 'html.parser')
         output.salvar_html_pagina(nome_arquivo_completo, soup);
         return soup;
@@ -139,7 +142,7 @@ def scrap_projects_page(page_url):
     # soup = BeautifulSoup(content, 'html.parser')
 
     #Quando via requisição
-    page = requests.get(page_url, timeout=30)
+    page = requests.get(page_url, timeout=120)
     soup = BeautifulSoup(page.content, 'html.parser')
 
     output.salvar_html_pagina(caminho_padrao_armazenamento_pagina + '/principal.html', soup);
@@ -195,19 +198,30 @@ df = dataframe_gerador([]);
 
 page_number = 1
 #while ultima_data_encontrada >= filtro_data:
-while page_number < total_pages:
-    page_url = default_page_url;
-    if page_number > 1:
-        page_url += "/page:" + str(page_number)
+if (popular_dataframe == True):
+    while page_number < total_pages:
+        page_url = default_page_url;
+        if page_number > 1:
+            page_url += "/page:" + str(page_number)
 
-    df = df.append(dataframe_gerador(scrap_projects_page(page_url)))
-    output.printar_console(df);
-    output.exportar_csv(df);
+        try:
+            df_pagina = dataframe_gerador(scrap_projects_page(page_url));
+        except:
+            print()
+            print('Exceção no scrap da listagem, reprocessando página')
+            print()
+            continue; # se erro, não incrementa o contador da página e não adiciona ao df princípal. reprocessa a página inteira
 
-    page_number += 1
+        df = df.append(df_pagina)
+        output.printar_console(df);
+        output.exportar_csv(df);
 
-    if (filtro_atendido == True):
-        break
+        page_number += 1
+
+        if (filtro_atendido == True):
+            break
+
+df = pd.read_csv('D:\TCC2\exportacao\projetos_camara_vereadores.csv', error_bad_lines=False);
 
 print('Autor: ' + autor)
 df_autor = df.query('Autores == "' + autor + '"')

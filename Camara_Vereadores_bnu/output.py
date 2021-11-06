@@ -12,7 +12,7 @@ def printar_console(data_frame):
 
 
 def exportar_csv(data_frame):
-    data_frame.to_csv('D:\TCC2\exportacao\projetos_camara_vereadores.csv', sep=';')
+    data_frame.to_csv('D:\TCC2\exportacao\projetos_camara_vereadores.csv', encoding='utf-8')
 
 def apresentar_grafico_radar(data_frame):
     print('apresentar_grafico_radar')
